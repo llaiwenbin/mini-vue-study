@@ -25,11 +25,16 @@ export class RefImpl {
       this._rawValue = newValue
       this._value = convert(newValue)
       // 触发
-      triggerEffects(this.dep)
+      triggerRefValue(this)
     }
   }
 }
-function trackRefValue(ref) {
+
+export function triggerRefValue(ref) {
+  triggerEffects(ref.dep);
+}
+
+export function trackRefValue(ref) {
   if (isTracking()) {
     trackEffects(ref.dep)
   }

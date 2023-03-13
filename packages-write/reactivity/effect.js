@@ -2,12 +2,13 @@
 let activeEffect;
 // 维护一个 dep 存放 _fn
 let targetMap = new Map();
-class ReactiveEffect {
+export class ReactiveEffect {
   deps = [];
   active = true;
 
-  constructor(fun) {
+  constructor(fun, scheduler) {
     this.fun = fun;
+    this.scheduler = scheduler;
   }
   run() {
     // 执行 fn  但是不收集依赖
@@ -102,5 +103,7 @@ export function isTracking() {
 }
 
 export function triggerEffects(dep) {
-  dep.forEach((_effect) => _effect.run());
+  dep.forEach((_effect) => _effect.scheduler
+    ? _effect.scheduler()
+    : _effect.run());
 }
