@@ -5,7 +5,7 @@ export const isObject = (val) => {
 };
 
 function createGetter(target, key, receiver) {
-  if (ReactiveFlags.IS_REACTIVE) {
+  if (key === ReactiveFlags.IS_REACTIVE) {
     return true;
   }
   track(target, key);
