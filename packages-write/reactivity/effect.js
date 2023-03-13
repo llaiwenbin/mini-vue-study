@@ -52,7 +52,9 @@ export function effect(fun) {
 }
 
 export function track(target, key) {
-  if (!activeEffect) return;
+  if (!isTracking()) {
+    return;
+  }
   let depsMap = targetMap.get(target);
   if (!depsMap) {
     // 初始化 depsMap 的逻辑
@@ -67,16 +69,38 @@ export function track(target, key) {
     depsMap.set(key, dep);
   }
 
-  if (!dep.includes(activeEffect)) {
-    dep.push(activeEffect);
-    activeEffect.deps.push(activeEffect);
-  }
+  trackEffects(dep)
 }
 
 export function trigger(target, key) {
   const depsMap = targetMap.get(target);
-  if(!depsMap) return;
+  if (!depsMap) return;
 
   const dep = depsMap.get(key) || [];
+  triggerEffects(dep)
+}
+
+
+export function trackEffects(dep) {
+  // 用 dep 来存放所有的 effect
+
+  // TODO
+  // 这里是一个优化点
+  // 先看看这个依赖是不是已经收集了，
+  // 已经收集的话，那么就不需要在收集一次了
+  // 可能会影响 code path change 的情况
+  // 需要每次都 cleanupEffect
+  // shouldTrack = !dep.has(activeEffect!);
+  if (!dep.includes(activeEffect)) {
+    dep.push(activeEffect);
+    activeEffect.deps.push(dep);
+  }
+}
+
+export function isTracking() {
+  return activeEffect
+}
+
+export function triggerEffects(dep) {
   dep.forEach((_effect) => _effect.run());
 }
