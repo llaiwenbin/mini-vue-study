@@ -7,6 +7,7 @@ import { Fragment, normalizeVNode, Text } from "./vnode";
 import { shouldUpdateComponent } from "./componentRenderUtils";
 import { createAppAPI } from "./createApp";
 
+// 渲染入口文件、options为具体dom操作方法、这样可以抽离出平台操作和虚拟 DOM
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
@@ -23,6 +24,7 @@ export function createRenderer(options) {
     patch(null, vnode, container);
   };
 
+  // 通过不同类型进行 patch，包括Text、Slot、Element、Components等元素
   function patch(
     n1,
     n2,
@@ -88,7 +90,7 @@ export function createRenderer(options) {
       mountElement(n2, container, anchor);
     } else {
       // todo
-      updateElement(n1, n2, container, anchor, parentComponent);
+      updateElement(n1, n2, container, anchor, parentComponent); 
     }
   }
 
@@ -189,7 +191,7 @@ export function createRenderer(options) {
     const isSameVNodeType = (n1, n2) => {
       return n1.type === n2.type && n1.key === n2.key;
     };
-
+    // 1、头和头进行对比
     while (i <= e1 && i <= e2) {
       const prevChild = c1[i];
       const nextChild = c2[i];
@@ -205,7 +207,7 @@ export function createRenderer(options) {
       patch(prevChild, nextChild, container, parentAnchor, parentComponent);
       i++;
     }
-
+    // 2、尾和尾进行对比
     while (i <= e1 && i <= e2) {
       // 从右向左取值
       const prevChild = c1[e1];
@@ -222,7 +224,7 @@ export function createRenderer(options) {
       e1--;
       e2--;
     }
-
+    
     if (i > e1 && i <= e2) {
       // 如果是这种情况的话就说明 e2 也就是新节点的数量大于旧节点的数量
       // 也就是说新增了 vnode
@@ -258,6 +260,7 @@ export function createRenderer(options) {
       let moved = false;
       let maxNewIndexSoFar = 0;
       // 先把 key 和 newIndex 绑定好，方便后续基于 key 找到 newIndex
+      // [{key:newIdx}]用于确定旧元素 Key 是否在新节点上存在过，存在的话下标是多少
       // 时间复杂度是 O(1)
       for (let i = s2; i <= e2; i++) {
         const nextChild = c2[i];
@@ -285,7 +288,7 @@ export function createRenderer(options) {
           hostRemove(prevChild.el);
           continue;
         }
-
+        // 找到当前老节点在新节点数组的 index
         let newIndex;
         if (prevChild.key != null) {
           // 这里就可以通过key快速的查找了， 看看在新的里面这个节点存在不存在
@@ -311,6 +314,7 @@ export function createRenderer(options) {
           // 新老节点都存在
           console.log("新老节点都存在");
           // 把新节点的索引和老的节点的索引建立映射关系
+          // [{newIndex,oldIndex}] 用户新节点查找老节点index
           // i + 1 是因为 i 有可能是0 (0 的话会被认为新节点在老的节点中不存在)
           newIndexToOldIndexMap[newIndex - s2] = i + 1;
           // 来确定中间的节点是不是需要移动
@@ -374,6 +378,25 @@ export function createRenderer(options) {
       }
     }
   }
+  // 新节点数组 n2，旧节点数组 n1。
+
+  // 常用优化
+  // 自左向右进行对比，找出所有新旧节点相同的下标，直到新旧节点不同时记录 i
+  // 自右向左进行对比，同上记录 j
+
+  // 进行截枝 
+  // 如果 i > n2 && i <= n1 说明新节点已完全处理完，只需要对生于旧进行删除即可
+  // 同理 如果 i < n2 && i > n1 说明旧节点已处理完毕，新节点进行patch即可
+
+  // 左右进行确定后需要确认中间 a,b,[c,d,e],f,g
+
+  // 遍历老节点，如果不在新节点的话进行删除。
+  // 此时需要将 key 和 newIndex 进 行联系([{key,newIndex}])，方便O(1)通过Key进行查找到 newIndex，否者遍历查找 O(n)。
+  // 判断是否有 newIndex，如果有说明可以复用，patch即可。如果没有那么将旧节点删除即可。
+
+  // 遍历新节点，如果不在老节点中那么进行新增。
+  // 需要将新旧节点的index进行联系([{newIndex:oldIndex}]);
+  // 判断新节点是否在老节点中，如果不存在那么就进行patch去创建，如果存在那么通过 最长子序列 去优化修改位置
 
   function mountElement(vnode, container, anchor) {
     const { shapeFlag, props } = vnode;
@@ -552,6 +575,7 @@ export function createRenderer(options) {
         const nextTree = normalizeVNode(
           instance.render.call(proxyToUse, proxyToUse)
         );
+        
         // 替换之前的 subTree
         const prevTree = instance.subTree;
         instance.subTree = nextTree;

@@ -14,6 +14,7 @@ export const enum ReactiveFlags {
   RAW = "__v_raw",
 }
 
+// 尽量抽离共性，如果是proxy也进行抽离，不同的地方抽离成文件夹
 export function reactive(target) {
   return createReactiveObject(target, reactiveMap, mutableHandlers);
 }
@@ -34,6 +35,7 @@ export function isProxy(value) {
   return isReactive(value) || isReadonly(value);
 }
 
+// 判断条件除了显示的设置某个标识、还可以通过 proxy 访问到当前值的时候 return true
 export function isReadonly(value) {
   return !!value[ReactiveFlags.IS_READONLY];
 }
